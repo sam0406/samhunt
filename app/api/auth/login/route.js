@@ -1,6 +1,4 @@
-import {
-    NextResponse
-} from "next/server";
+import { NextResponse } from "next/server";
 
 import {
     authenticate,
@@ -9,75 +7,68 @@ import {
 } from "../../../../lib/auth";
 
 export async function POST(request) {
-
     try {
+        const body = await request.json();
 
-        const body =
-            await request.json();
+        const username = String(body.username || "");
+        const password = String(body.password || "");
 
-        const username =
-            String(
-                body.username || ""
-            );
-
-        const password =
-            String(
-                body.password || ""
-            );
-
-        if (
-            !authenticate(
-                username,
-                password
-            )
-        ) {
-
+        if (!username || !password) {
             return NextResponse.json(
                 {
                     success: false,
-                    error:
-                        "Invalid username or password"
+                    error: "Username and password are required"
                 },
-                {
-                    status: 401
-                }
+                { status: 400 }
             );
         }
 
-        const token =
-            createSession(username);
-
-        const response =
-            NextResponse.json({
-                success: true
-            });
-
-        response.cookies.set(
-            COOKIE_NAME,
-            token,
-            {
-                httpOnly: true,
-                secure:
-                    process.env.NODE_ENV ===
-                    "production",
-                sameSite: "lax",
-                maxAge: 86400,
-                path: "/"
-            }
+        const valid = authenticate(
+            username,
+            password
         );
+
+        if (!valid) {
+            return NextResponse.json(
+                {
+                    success: false,
+                    error: "Invalid username or password"
+                },
+                { status: 401 }
+            );
+        }
+
+        const token = createSession(username);
+
+        const response = NextResponse.json({
+            success: true
+        });
+
+        response.cookies.set({
+            name: COOKIE_NAME,
+            value: token,
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "lax",
+            maxAge: 60 * 60 * 24,
+            path: "/"
+        });
 
         return response;
 
-    } catch {
+    } catch (error) {
+
+        console.error(
+            "LOGIN_ERROR:",
+            error
+        );
 
         return NextResponse.json(
             {
                 success: false,
-                error: "Invalid request"
+                error: "Login server error"
             },
-            {
-                status: 400
-            }
+            { status: 500 }
         );
     }
 }
