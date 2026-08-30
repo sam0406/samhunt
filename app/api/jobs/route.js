@@ -1,95 +1,89 @@
-import {
-    NextResponse
-} from "next/server";
+import { NextResponse } from "next/server";
 
 import {
     createJob,
     getJobs
 } from "../../../lib/jobs";
 
-export async function GET() {
+export const dynamic = "force-dynamic";
 
-    return NextResponse.json({
-        success: true,
-        jobs: getJobs()
-    });
+export async function GET() {
+    try {
+        const jobs = await getJobs();
+
+        return NextResponse.json({
+            success: true,
+            jobs: Array.isArray(jobs) ? jobs : []
+        });
+
+    } catch (error) {
+        console.error("GET_JOBS_ERROR:", error);
+
+        return NextResponse.json(
+            {
+                success: false,
+                jobs: [],
+                error: "Database error"
+            },
+            {
+                status: 500
+            }
+        );
+    }
 }
 
 export async function POST(request) {
-
     try {
-
-        const body =
-            await request.json();
+        const body = await request.json();
 
         const target =
-            String(
-                body.target || ""
-            ).trim();
+            String(body.target || "").trim();
 
         const range =
-            String(
-                body.range || ""
-            ).trim();
+            String(body.range || "").trim();
 
         if (!target) {
-
             return NextResponse.json(
                 {
-                    error:
-                        "Target is required"
+                    success: false,
+                    error: "Target is required"
                 },
-                {
-                    status: 400
-                }
+                { status: 400 }
             );
         }
 
         if (!range) {
-
             return NextResponse.json(
                 {
-                    error:
-                        "Range is required"
+                    success: false,
+                    error: "Range is required"
                 },
-                {
-                    status: 400
-                }
+                { status: 400 }
             );
         }
 
-        const job =
-            createJob({
-                mode:
-                    body.mode ||
-                    "address",
-
-                target,
-
-                range,
-
-                threads:
-                    body.threads || 1,
-
-                compressed:
-                    body.compressed
-            });
+        const job = await createJob({
+            mode: body.mode || "address",
+            target,
+            range,
+            threads: body.threads || 1,
+            compressed: Boolean(body.compressed)
+        });
 
         return NextResponse.json({
             success: true,
             job
         });
 
-    } catch {
+    } catch (error) {
+        console.error("CREATE_JOB_ERROR:", error);
 
         return NextResponse.json(
             {
-                error:
-                    "Could not create job"
+                success: false,
+                error: "Could not create job"
             },
-            {
-                status: 400
-            }
+            { status: 500 }
         );
     }
 }
