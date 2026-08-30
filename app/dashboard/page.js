@@ -7,35 +7,52 @@ import {
 
 export default function Dashboard() {
 
-    const [
-        jobs,
-        setJobs
-    ] = useState([]);
-
-    const [
-        loading,
-        setLoading
-    ] = useState(true);
+    const [jobs, setJobs] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [loadError, setLoadError] = useState("");
 
 
     async function loadJobs() {
 
         try {
 
-            const response =
-                await fetch(
-                    "/api/jobs",
-                    {
-                        cache: "no-store"
-                    }
+            setLoadError("");
+
+            const response = await fetch(
+                "/api/jobs",
+                {
+                    cache: "no-store"
+                }
+            );
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(
+                    data.error ||
+                    "Failed to load jobs"
                 );
-
-            const data =
-                await response.json();
-
-            if (data.success) {
-                setJobs(data.jobs);
             }
+
+            setJobs(
+                Array.isArray(data.jobs)
+                    ? data.jobs
+                    : []
+            );
+
+        } catch (error) {
+
+            console.error(
+                "LOAD_JOBS_ERROR:",
+                error
+            );
+
+            setJobs([]);
+
+            setLoadError(
+                error.message ||
+                "Could not load jobs"
+            );
 
         } finally {
 
@@ -49,11 +66,10 @@ export default function Dashboard() {
 
         loadJobs();
 
-        const timer =
-            setInterval(
-                loadJobs,
-                3000
-            );
+        const timer = setInterval(
+            loadJobs,
+            3000
+        );
 
         return () =>
             clearInterval(timer);
@@ -63,15 +79,28 @@ export default function Dashboard() {
 
     async function logout() {
 
-        await fetch(
-            "/api/auth/logout",
-            {
-                method: "POST"
-            }
-        );
+        try {
 
-        window.location.href =
-            "/login";
+            await fetch(
+                "/api/auth/logout",
+                {
+                    method: "POST"
+                }
+            );
+
+        } catch (error) {
+
+            console.error(
+                "LOGOUT_ERROR:",
+                error
+            );
+
+        } finally {
+
+            window.location.href =
+                "/login";
+
+        }
     }
 
 
@@ -126,8 +155,9 @@ export default function Dashboard() {
 
                     </div>
 
+
                     <a
-                        href="/dashboard#new"
+                        href="#new"
                         className="primary"
                     >
                         + New Job
@@ -170,6 +200,14 @@ export default function Dashboard() {
 
                         </div>
 
+
+                        <button
+                            onClick={loadJobs}
+                            className="secondary"
+                        >
+                            Refresh
+                        </button>
+
                     </div>
 
 
@@ -177,6 +215,23 @@ export default function Dashboard() {
 
                         <div className="empty">
                             Loading...
+                        </div>
+
+                    ) : loadError ? (
+
+                        <div className="empty">
+
+                            <p>
+                                {loadError}
+                            </p>
+
+                            <button
+                                onClick={loadJobs}
+                                className="secondary"
+                            >
+                                Try again
+                            </button>
+
                         </div>
 
                     ) : jobs.length === 0 ? (
@@ -189,15 +244,17 @@ export default function Dashboard() {
 
                         <div className="jobs">
 
-                            {jobs.map(job => (
+                            {jobs.map(
+                                job => (
 
-                                <JobRow
-                                    key={job.id}
-                                    job={job}
-                                    reload={loadJobs}
-                                />
+                                    <JobRow
+                                        key={job.id}
+                                        job={job}
+                                        reload={loadJobs}
+                                    />
 
-                            ))}
+                                )
+                            )}
 
                         </div>
 
@@ -212,34 +269,33 @@ export default function Dashboard() {
 }
 
 
+/*
+|--------------------------------------------------------------------------
+| New Job Form
+|--------------------------------------------------------------------------
+*/
+
 function JobForm({
     onCreated
 }) {
 
-    const [
-        target,
-        setTarget
-    ] = useState("");
+    const [target, setTarget] =
+        useState("");
 
-    const [
-        range,
-        setRange
-    ] = useState("");
+    const [range, setRange] =
+        useState("");
 
-    const [
-        mode,
-        setMode
-    ] = useState("address");
+    const [mode, setMode] =
+        useState("address");
 
-    const [
-        threads,
-        setThreads
-    ] = useState(1);
+    const [threads, setThreads] =
+        useState(1);
 
-    const [
-        message,
-        setMessage
-    ] = useState("");
+    const [message, setMessage] =
+        useState("");
+
+    const [submitting, setSubmitting] =
+        useState(false);
 
 
     async function submit(event) {
@@ -247,49 +303,69 @@ function JobForm({
         event.preventDefault();
 
         setMessage("");
+        setSubmitting(true);
 
-        const response =
-            await fetch(
-                "/api/jobs",
-                {
-                    method: "POST",
+        try {
 
-                    headers: {
-                        "Content-Type":
-                            "application/json"
-                    },
+            const response =
+                await fetch(
+                    "/api/jobs",
+                    {
+                        method: "POST",
 
-                    body:
-                        JSON.stringify({
-                            target,
-                            range,
-                            mode,
-                            threads
-                        })
-                }
-            );
+                        headers: {
+                            "Content-Type":
+                                "application/json"
+                        },
 
-        const data =
-            await response.json();
+                        body:
+                            JSON.stringify({
+                                target,
+                                range,
+                                mode,
+                                threads
+                            })
+                    }
+                );
 
-        if (!response.ok) {
+            const data =
+                await response.json();
+
+            if (!response.ok) {
+
+                throw new Error(
+                    data.error ||
+                    "Failed to create job"
+                );
+            }
+
+            setTarget("");
+            setRange("");
+            setThreads(1);
 
             setMessage(
-                data.error ||
-                "Failed"
+                "Job created successfully."
             );
 
-            return;
+            await onCreated();
+
+        } catch (error) {
+
+            console.error(
+                "CREATE_JOB_ERROR:",
+                error
+            );
+
+            setMessage(
+                error.message ||
+                "Could not create job"
+            );
+
+        } finally {
+
+            setSubmitting(false);
+
         }
-
-        setTarget("");
-        setRange("");
-
-        setMessage(
-            "Job created."
-        );
-
-        onCreated();
     }
 
 
@@ -301,13 +377,14 @@ function JobForm({
         >
 
             <label>
+
                 Mode
 
                 <select
                     value={mode}
-                    onChange={e =>
+                    onChange={event =>
                         setMode(
-                            e.target.value
+                            event.target.value
                         )
                     }
                 >
@@ -330,13 +407,14 @@ function JobForm({
 
 
             <label>
+
                 Target
 
                 <input
                     value={target}
-                    onChange={e =>
+                    onChange={event =>
                         setTarget(
-                            e.target.value
+                            event.target.value
                         )
                     }
                     placeholder="Research target"
@@ -347,13 +425,14 @@ function JobForm({
 
 
             <label>
+
                 Range
 
                 <input
                     value={range}
-                    onChange={e =>
+                    onChange={event =>
                         setRange(
-                            e.target.value
+                            event.target.value
                         )
                     }
                     placeholder="START:END"
@@ -364,6 +443,7 @@ function JobForm({
 
 
             <label>
+
                 Threads
 
                 <input
@@ -371,10 +451,13 @@ function JobForm({
                     min="1"
                     max="256"
                     value={threads}
-                    onChange={e =>
+                    onChange={event =>
                         setThreads(
-                            Number(
-                                e.target.value
+                            Math.max(
+                                1,
+                                Number(
+                                    event.target.value
+                                ) || 1
                             )
                         )
                     }
@@ -386,15 +469,22 @@ function JobForm({
             <button
                 className="primary"
                 type="submit"
+                disabled={submitting}
             >
-                Create Job
+
+                {submitting
+                    ? "Creating..."
+                    : "Create Job"}
+
             </button>
 
 
             {message && (
+
                 <p className="form-message">
                     {message}
                 </p>
+
             )}
 
         </form>
@@ -402,34 +492,88 @@ function JobForm({
 }
 
 
+/*
+|--------------------------------------------------------------------------
+| Job Row
+|--------------------------------------------------------------------------
+*/
+
 function JobRow({
     job,
     reload
 }) {
 
-    async function action(
-        name
-    ) {
+    const [busy, setBusy] =
+        useState(false);
 
-        await fetch(
-            `/api/jobs/${job.id}`,
-            {
-                method: "POST",
+    const [error, setError] =
+        useState("");
 
-                headers: {
-                    "Content-Type":
-                        "application/json"
-                },
 
-                body:
-                    JSON.stringify({
-                        action: name
-                    })
+    async function action(name) {
+
+        setBusy(true);
+        setError("");
+
+        try {
+
+            const response =
+                await fetch(
+                    `/api/jobs/${job.id}`,
+                    {
+                        method: "POST",
+
+                        headers: {
+                            "Content-Type":
+                                "application/json"
+                        },
+
+                        body:
+                            JSON.stringify({
+                                action: name
+                            })
+                    }
+                );
+
+            const data =
+                await response.json();
+
+            if (!response.ok) {
+
+                throw new Error(
+                    data.error ||
+                    "Action failed"
+                );
             }
-        );
 
-        reload();
+            await reload();
+
+        } catch (error) {
+
+            console.error(
+                "JOB_ACTION_ERROR:",
+                error
+            );
+
+            setError(
+                error.message ||
+                "Action failed"
+            );
+
+        } finally {
+
+            setBusy(false);
+
+        }
     }
+
+
+    const progress =
+        Number.isFinite(
+            Number(job.progress)
+        )
+            ? Number(job.progress)
+            : 0;
 
 
     return (
@@ -448,6 +592,14 @@ function JobRow({
                     {job.target}
                 </span>
 
+                {job.range && (
+
+                    <span>
+                        Range: {job.range}
+                    </span>
+
+                )}
+
             </div>
 
 
@@ -458,14 +610,20 @@ function JobRow({
                     <div
                         style={{
                             width:
-                                `${job.progress}%`
+                                `${Math.max(
+                                    0,
+                                    Math.min(
+                                        100,
+                                        progress
+                                    )
+                                )}%`
                         }}
                     />
 
                 </div>
 
                 <span>
-                    {job.progress}%
+                    {progress.toFixed(2)}%
                 </span>
 
             </div>
@@ -474,7 +632,9 @@ function JobRow({
             <div className="job-status">
 
                 <span
-                    className={`badge ${job.status}`}
+                    className={
+                        `badge ${job.status}`
+                    }
                 >
                     {job.status}
                 </span>
@@ -484,11 +644,14 @@ function JobRow({
                     job.status === "running") && (
 
                     <button
+                        disabled={busy}
                         onClick={() =>
                             action("pause")
                         }
                     >
-                        Pause
+                        {busy
+                            ? "..."
+                            : "Pause"}
                     </button>
 
                 )}
@@ -498,16 +661,28 @@ function JobRow({
                     job.status === "stopped") && (
 
                     <button
+                        disabled={busy}
                         onClick={() =>
                             action("resume")
                         }
                     >
-                        Resume
+                        {busy
+                            ? "..."
+                            : "Resume"}
                     </button>
 
                 )}
 
             </div>
+
+
+            {error && (
+
+                <div className="job-error">
+                    {error}
+                </div>
+
+            )}
 
         </div>
     );
