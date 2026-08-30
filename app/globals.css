@@ -1,0 +1,358 @@
+* {
+    box-sizing: border-box;
+}
+
+html,
+body {
+    margin: 0;
+    min-height: 100%;
+}
+
+body {
+    background: #080b11;
+    color: #edf1f7;
+    font-family:
+        Inter,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+}
+
+button,
+input,
+select {
+    font: inherit;
+}
+
+.login-page {
+    min-height: 100vh;
+    display: grid;
+    place-items: center;
+    padding: 20px;
+}
+
+.login-card {
+    width: min(400px, 100%);
+    padding: 35px;
+    border: 1px solid #252d3a;
+    border-radius: 16px;
+    background: #0e131c;
+}
+
+.login-logo,
+.logo {
+    display: grid;
+    place-items: center;
+    background: #eef1f5;
+    color: #080b11;
+    font-weight: 800;
+}
+
+.login-logo {
+    width: 50px;
+    height: 50px;
+    border-radius: 13px;
+    margin-bottom: 20px;
+}
+
+.login-card h1 {
+    margin: 0;
+}
+
+.login-card > p {
+    color: #7f899a;
+}
+
+.login-card form {
+    margin-top: 28px;
+}
+
+label {
+    display: block;
+    margin-bottom: 18px;
+    color: #bfc7d4;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+input,
+select {
+    width: 100%;
+    height: 46px;
+    margin-top: 8px;
+    padding: 0 13px;
+    border: 1px solid #2a3341;
+    border-radius: 8px;
+    background: #080c13;
+    color: white;
+    outline: none;
+}
+
+input:focus,
+select:focus {
+    border-color: #697386;
+}
+
+button {
+    border: 0;
+    border-radius: 8px;
+    padding: 11px 16px;
+    cursor: pointer;
+}
+
+.login-card button,
+.primary {
+    background: #eef1f5;
+    color: #080b11;
+    font-weight: 700;
+}
+
+.login-card button {
+    width: 100%;
+    margin-top: 5px;
+}
+
+.error {
+    margin-bottom: 15px;
+    padding: 11px;
+    border-radius: 7px;
+    background: #32181d;
+    color: #ff9ba7;
+    font-size: 13px;
+}
+
+.dashboard {
+    min-height: 100vh;
+}
+
+.topbar {
+    height: 74px;
+    padding: 0 30px;
+    border-bottom: 1px solid #202734;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.brand .logo {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+}
+
+.brand strong {
+    display: block;
+}
+
+.brand span {
+    display: block;
+    margin-top: 3px;
+    color: #717c8e;
+    font-size: 11px;
+}
+
+.logout {
+    background: #151b25;
+    color: #aeb7c6;
+}
+
+.content {
+    width: min(1000px, calc(100% - 32px));
+    margin: auto;
+    padding: 55px 0;
+}
+
+.heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: end;
+    margin-bottom: 30px;
+}
+
+.eyebrow {
+    color: #737e90;
+    font-size: 10px;
+    letter-spacing: 2px;
+    font-weight: 700;
+}
+
+.heading h1 {
+    margin: 8px 0 0;
+    font-size: 38px;
+}
+
+.card {
+    margin-bottom: 22px;
+    padding: 27px;
+    border: 1px solid #242c39;
+    border-radius: 15px;
+    background: #0e131c;
+}
+
+.card h2 {
+    margin: 0;
+    font-size: 18px;
+}
+
+.card-title {
+    margin-bottom: 20px;
+}
+
+.card-title p {
+    color: #717c8e;
+    font-size: 12px;
+}
+
+.job-form {
+    display: grid;
+    grid-template-columns:
+        1fr 1.5fr 1.5fr .7fr;
+    gap: 15px;
+    align-items: end;
+}
+
+.job-form label {
+    margin: 0;
+}
+
+.job-form .primary {
+    height: 46px;
+}
+
+.form-message {
+    grid-column: 1 / -1;
+    color: #7f899a;
+}
+
+.empty {
+    padding: 30px 0;
+    text-align: center;
+    color: #687386;
+}
+
+.job {
+    display: grid;
+    grid-template-columns: 1.5fr 1fr 1fr;
+    gap: 20px;
+    align-items: center;
+    padding: 18px 0;
+    border-top: 1px solid #202734;
+}
+
+.job > div:first-child strong {
+    display: block;
+    font-size: 13px;
+}
+
+.job > div:first-child span {
+    display: block;
+    margin-top: 6px;
+    color: #737e90;
+    font-size: 11px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.job-progress {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.progress {
+    flex: 1;
+    height: 5px;
+    overflow: hidden;
+    border-radius: 5px;
+    background: #202734;
+}
+
+.progress div {
+    height: 100%;
+    background: #dce1e8;
+}
+
+.job-progress span {
+    width: 42px;
+    color: #8b95a6;
+    font-size: 11px;
+}
+
+.job-status {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 10px;
+}
+
+.job-status button {
+    background: #171e28;
+    color: #abb4c2;
+    font-size: 11px;
+}
+
+.badge {
+    padding: 5px 9px;
+    border-radius: 20px;
+    background: #171e28;
+    color: #9da7b7;
+    font-size: 10px;
+    text-transform: uppercase;
+}
+
+.badge.running {
+    color: #8ee0a7;
+}
+
+.badge.paused {
+    color: #e5c47b;
+}
+
+.badge.stopped {
+    color: #ee9a9a;
+}
+
+@media (max-width: 800px) {
+
+    .job-form {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .job {
+        grid-template-columns: 1fr;
+    }
+
+    .job-status {
+        justify-content: flex-start;
+    }
+
+}
+
+@media (max-width: 550px) {
+
+    .topbar {
+        padding: 0 18px;
+    }
+
+    .content {
+        padding: 35px 0;
+    }
+
+    .heading {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 18px;
+    }
+
+    .job-form {
+        grid-template-columns: 1fr;
+    }
+
+}
