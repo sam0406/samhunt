@@ -1,8 +1,29 @@
 import { NextResponse } from "next/server";
 
-import {
-    COOKIE_NAME
-} from "./lib/auth";
+
+const COOKIE_NAME = "samhunt_session";
+
+
+function decodeBase64Url(value) {
+
+    try {
+
+        let base64 =
+            value
+                .replace(/-/g, "+")
+                .replace(/_/g, "/");
+
+        while (base64.length % 4) {
+            base64 += "=";
+        }
+
+        return atob(base64);
+
+    } catch {
+
+        return null;
+    }
+}
 
 
 async function verifySession(token) {
@@ -10,19 +31,21 @@ async function verifySession(token) {
     try {
 
         const decoded =
-            Buffer
-                .from(
-                    token,
-                    "base64url"
-                )
-                .toString();
+            decodeBase64Url(token);
+
+        if (!decoded) {
+            return false;
+        }
+
 
         const parts =
             decoded.split(":");
 
+
         if (parts.length !== 4) {
             return false;
         }
+
 
         const [
             username,
@@ -31,6 +54,7 @@ async function verifySession(token) {
             signature
         ] = parts;
 
+
         if (
             username !==
             process.env.SAMHUNT_ADMIN_USER
@@ -38,34 +62,60 @@ async function verifySession(token) {
             return false;
         }
 
-        const age =
-            Date.now() -
+
+        const time =
             Number(timestamp);
 
+
+        if (!Number.isFinite(time)) {
+            return false;
+        }
+
+
+        const age =
+            Date.now() - time;
+
+
         if (
-            !Number.isFinite(age) ||
             age < 0 ||
             age > 86400000
         ) {
             return false;
         }
 
-        if (!random || random.length < 32) {
+
+        if (
+            !random ||
+            random.length < 32
+        ) {
             return false;
         }
+
+
+        if (
+            !signature ||
+            signature.length !== 64
+        ) {
+            return false;
+        }
+
 
         const payload =
             `${username}:${timestamp}:${random}`;
 
+
         const secret =
             process.env.SAMHUNT_SESSION_SECRET;
+
 
         if (!secret) {
             return false;
         }
 
+
         const encoder =
             new TextEncoder();
+
 
         const key =
             await crypto.subtle.importKey(
@@ -79,12 +129,14 @@ async function verifySession(token) {
                 ["sign"]
             );
 
+
         const expectedBuffer =
             await crypto.subtle.sign(
                 "HMAC",
                 key,
                 encoder.encode(payload)
             );
+
 
         const expected =
             Array
@@ -101,9 +153,8 @@ async function verifySession(token) {
                 )
                 .join("");
 
-        return (
-            signature === expected
-        );
+
+        return signature === expected;
 
     } catch (error) {
 
@@ -122,22 +173,45 @@ export async function middleware(request) {
     const pathname =
         request.nextUrl.pathname;
 
+
+    /*
+    |--------------------------------------------------------------------------
+    | Public routes
+    |--------------------------------------------------------------------------
+    */
+
     if (
         pathname === "/login" ||
         pathname.startsWith("/api/auth")
     ) {
+
         return NextResponse.next();
     }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Read session cookie
+    |--------------------------------------------------------------------------
+    */
 
     const token =
         request.cookies.get(
             COOKIE_NAME
         )?.value;
 
+
     const valid =
         token
             ? await verifySession(token)
             : false;
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Not authenticated
+    |--------------------------------------------------------------------------
+    */
 
     if (!valid) {
 
@@ -147,6 +221,7 @@ export async function middleware(request) {
 
             return NextResponse.json(
                 {
+                    success: false,
                     error:
                         "Authentication required"
                 },
@@ -156,6 +231,7 @@ export async function middleware(request) {
             );
         }
 
+
         return NextResponse.redirect(
             new URL(
                 "/login",
@@ -164,13 +240,22 @@ export async function middleware(request) {
         );
     }
 
+
+    /*
+    |--------------------------------------------------------------------------
+    | Authenticated
+    |--------------------------------------------------------------------------
+    */
+
     return NextResponse.next();
 }
 
 
 export const config = {
+
     matcher: [
         "/dashboard/:path*",
         "/api/jobs/:path*"
     ]
+
 };
