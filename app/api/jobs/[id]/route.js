@@ -1,141 +1,61 @@
-import {
-    NextResponse
-} from "next/server";
+export function createCheckpoint(job) {
+    return {
+        version: 1,
 
-import {
-    getJob,
-    updateJob
-} from "../../../../lib/jobs";
+        jobId: job.id,
 
-import {
-    createCheckpoint
-} from "../../../../lib/checkpoint";
+        savedAt: new Date().toISOString(),
 
-export async function GET(
-    request,
-    { params }
-) {
+        progress: Number(job.progress) || 0,
 
-    const job =
-        getJob(params.id);
+        range: job.range,
 
-    if (!job) {
-
-        return NextResponse.json(
-            {
-                error:
-                    "Job not found"
-            },
-            {
-                status: 404
-            }
-        );
-    }
-
-    return NextResponse.json({
-        success: true,
-        job
-    });
+        state: {
+            mode: job.mode,
+            target: job.target,
+            threads: Number(job.threads) || 1,
+            compressed: Boolean(job.compressed)
+        }
+    };
 }
 
 
-export async function POST(
-    request,
-    { params }
-) {
+export function restoreCheckpoint(checkpoint) {
+    if (!checkpoint) {
+        return null;
+    }
 
-    const job =
-        getJob(params.id);
-
-    if (!job) {
-
-        return NextResponse.json(
-            {
-                error:
-                    "Job not found"
-            },
-            {
-                status: 404
-            }
+    if (
+        typeof checkpoint !== "object" ||
+        checkpoint.version !== 1
+    ) {
+        throw new Error(
+            "Invalid checkpoint format"
         );
     }
 
-    const body =
-        await request.json();
+    const state =
+        checkpoint.state || {};
 
-    const action =
-        body.action;
+    return {
+        jobId: checkpoint.jobId,
 
+        progress:
+            Number(checkpoint.progress) || 0,
 
-    if (action === "pause") {
+        range:
+            checkpoint.range || "",
 
-        const checkpoint =
-            createCheckpoint(job);
+        mode:
+            state.mode || "address",
 
-        updateJob(
-            job.id,
-            {
-                status: "paused",
-                checkpoint
-            }
-        );
+        target:
+            state.target || "",
 
-    }
+        threads:
+            Number(state.threads) || 1,
 
-    else if (action === "stop") {
-
-        const checkpoint =
-            createCheckpoint(job);
-
-        updateJob(
-            job.id,
-            {
-                status: "stopped",
-                checkpoint
-            }
-        );
-
-    }
-
-    else if (action === "resume") {
-
-        if (!job.checkpoint) {
-
-            return NextResponse.json(
-                {
-                    error:
-                        "No checkpoint available"
-                },
-                {
-                    status: 400
-                }
-            );
-        }
-
-        updateJob(
-            job.id,
-            {
-                status: "queued"
-            }
-        );
-
-    }
-
-    else {
-
-        return NextResponse.json(
-            {
-                error:
-                    "Unknown action"
-            },
-            {
-                status: 400
-            }
-        );
-    }
-
-    return NextResponse.json({
-        success: true,
-        job: getJob(job.id)
-    });
+        compressed:
+            Boolean(state.compressed)
+    };
 }
